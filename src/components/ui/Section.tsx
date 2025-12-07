@@ -9,9 +9,9 @@ interface SectionProps {
 
 export function Section({ id, title, children, className = "" }: SectionProps) {
   return (
-    <section id={id} className={`py-12 ${className}`}>
+    <section id={id} className={`py-16 ${className}`}>
       {title && (
-        <h2 className="text-3xl font-bold text-[#0F4C3A] mb-8">{title}</h2>
+        <h2 className="text-3xl font-bold text-[#0F4C3A] mb-12">{title}</h2>
       )}
       {children}
     </section>

@@ -35,7 +35,7 @@ body {
 .prose h2 {
   font-size: 1.75em;
   font-weight: 700;
-  margin-top: 2em;
+  margin-top: 3em;
   margin-bottom: 1em;
   color: #0F4C3A;
   line-height: 1.3;
@@ -52,7 +52,7 @@ body {
 .prose p {
   margin-top: 1.25em;
   margin-bottom: 1.25em;
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
   line-height: 1.75;
 }
 

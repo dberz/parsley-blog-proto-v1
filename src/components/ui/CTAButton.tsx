@@ -11,9 +11,10 @@ export function CTAButton({
   href,
   children,
   variant = "primary",
-}: CTAButtonProps) {
+  className = "",
+}: CTAButtonProps & { className?: string }) {
   const baseClasses =
-    "inline-flex items-center justify-center px-6 py-3 rounded-lg font-semibold transition-all duration-200 text-base";
+    `inline-flex items-center justify-center px-6 py-3 rounded-lg font-semibold transition-all duration-200 text-base ${className}`;
   
   const variantClasses = {
     primary:

@@ -12,8 +12,17 @@ import { Card } from "@/src/components/ui/Card";
 import { CTAButton } from "@/src/components/ui/CTAButton";
 import { BridgeCTA } from "@/src/components/ui/BridgeCTA";
 import { Section } from "@/src/components/ui/Section";
-import { ClinicalAttribution } from "@/src/components/ui/ClinicalAttribution";
 import { WhyTrustParsley } from "@/src/components/ui/WhyTrustParsley";
+import { KeyTakeaways } from "@/src/components/ui/KeyTakeaways";
+import { StickyTableOfContents } from "@/src/components/ui/StickyTableOfContents";
+import { PullQuote } from "@/src/components/ui/PullQuote";
+import { SourcesToggle } from "@/src/components/ui/SourcesToggle";
+import {
+  calculateReadTime,
+  extractHeadings,
+  injectHeadingIds,
+  insertBridgeCTAAfterSecondH2,
+} from "@/src/utils/blogUtils";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -46,8 +55,28 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     .map((s) => getConditionBySlug(s))
     .filter((c): c is NonNullable<typeof c> => c !== undefined);
 
+  // Process content for headings and read time
+  let processedBodyHtml = injectHeadingIds(blog.bodyHtml);
+  const headings = extractHeadings(processedBodyHtml);
+  const readTime = calculateReadTime(blog.bodyHtml);
+  
+  // Use updatedDate if available, otherwise fall back to publishedDate
+  const updatedDate = blog.publishedDate; // In future, add updatedDate field to BlogPost type
+
+  // Create Bridge CTA HTML to insert after second H2 - Editorial Pause Style
+  const bridgeCTAHtml = `
+    <div class="bridge-cta-wrapper my-16 text-center">
+      <p class="text-2xl font-serif italic text-gray-700 mb-4 leading-relaxed">Still feeling off? Our doctors look deeper.</p>
+      <a href="/care/${care.slug}" class="text-[#0F4C3A] hover:text-[#1a6b52] font-medium underline underline-offset-2 text-lg">Check Eligibility →</a>
+    </div>
+  `;
+
+  // Insert Bridge CTA after second H2
+  processedBodyHtml = insertBridgeCTAAfterSecondH2(processedBodyHtml, bridgeCTAHtml);
+
   return (
-    <div>
+    <div className="relative lg:pr-[20rem] xl:pr-[22rem]">
+      {/* Unified Header - Clean White Background */}
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
@@ -57,21 +86,25 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         ]}
       />
 
-      <h1 className="text-5xl font-bold text-[#0F4C3A] mb-6 leading-tight">
+      <h1 className="text-5xl font-bold text-[#0F4C3A] mb-3 leading-tight mt-6">
         {blog.title}
       </h1>
 
-      <ClinicalAttribution
-        authorName={blog.author}
-        authorRole="at Parsley Health"
-        authorLink="/team"
-        reviewedByName={blog.reviewedBy || "Dr. Sarah Johnson"}
-        reviewedByCredentials="MD"
-        reviewedByRole="Functional Medicine Physician"
-        reviewedByLink="/team/sarah-johnson"
-        publishedDate={blog.publishedDate}
-        reviewedDate={blog.publishedDate}
-      />
+      {/* Simple Byline - Neutral Gray */}
+      <div className="text-sm text-gray-500 mb-8">
+        By {blog.author}
+        {blog.reviewedBy && (
+          <> | Medically Reviewed by {blog.reviewedBy}</>
+        )}
+        {" | Updated "}
+        {new Date(updatedDate).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+        {" · "}
+        {readTime} min read
+      </div>
 
       <Link
         href={`/conditions/${condition.slug}`}
@@ -80,32 +113,32 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         Learn more about {condition.name} →
       </Link>
 
-      {/* TL;DR */}
-      <div className="bg-[#F5F5F0] border border-gray-200 rounded-xl p-8 mb-10">
-        <h3 className="font-bold text-[#0F4C3A] mb-4 text-lg">TL;DR</h3>
-        <ul className="list-disc list-inside space-y-2 text-gray-700">
-          {blog.tldrBullets.map((bullet, index) => (
-            <li key={index} className="leading-relaxed">{bullet}</li>
-          ))}
-        </ul>
-        <p className="mt-4 text-gray-700 leading-relaxed">
-          {condition.name === "Mold & Toxicity"
-            ? "Mold toxicity can cause persistent symptoms that don't respond to typical treatments. Parsley Health clinicians can help diagnose and treat mold toxicity through a comprehensive root cause approach."
-            : `If you're experiencing these symptoms, Parsley Health can help diagnose and treat ${condition.name.toLowerCase()} through a comprehensive root cause approach.`}
-        </p>
+      {/* Lead Paragraph - Editorial Style */}
+      <p className="text-xl text-gray-800 leading-relaxed mb-8 font-serif max-w-3xl">
+        Feeling unheard? You are not alone. We look deeper to find the root cause.
+      </p>
+
+      {/* Key Takeaways (Enhanced TL;DR) */}
+      <KeyTakeaways bullets={blog.tldrBullets} />
+
+      {/* Sticky Table of Contents (Desktop Only) */}
+      <StickyTableOfContents headings={headings} />
+
+      {/* Root Cause Pull Quote - First strategic placement */}
+      <div className="max-w-4xl">
+        <PullQuote
+          quote="Normal is not the same as optimal. At Parsley Health, we look beyond standard reference ranges to understand what's truly happening in your body."
+        />
       </div>
 
-      {/* Bridge CTA */}
-      <BridgeCTA
-        title={`Still struggling with possible ${condition.shortName} issues?`}
-        body={`If you recognize these symptoms, our clinicians can help you understand whether ${condition.name.toLowerCase()} is part of the picture and design a plan to feel better.`}
-        ctaLabel={`Get care for ${condition.name}`}
-        ctaHref={`/conditions/${condition.slug}`}
-      />
-
       {/* Body Content with Structure */}
-      <div className="prose prose-neutral max-w-none mb-12">
-        <div dangerouslySetInnerHTML={{ __html: blog.bodyHtml }} />
+      <div className="prose prose-neutral max-w-4xl mb-12 prose-lg prose-headings:mt-12">
+        <div dangerouslySetInnerHTML={{ __html: processedBodyHtml }} />
+        
+        {/* Root Cause Pull Quote - Second strategic placement */}
+        <PullQuote
+          quote="A root cause approach means we don't just treat symptoms—we find what's driving them and address it at the source."
+        />
         
         {/* Internal linking within content */}
         <div className="mt-8 p-6 bg-[#F5F5F0] rounded-lg">
@@ -132,20 +165,23 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       </div>
 
       {/* When to Seek Urgent Care */}
-      <Card className="mb-10 border-l-4 border-red-500">
-        <h3 className="font-semibold text-[#0F4C3A] mb-2">
-          When to seek urgent care
-        </h3>
-        <p className="text-gray-700 text-sm">
-          If you experience severe symptoms like difficulty breathing, chest
-          pain, or severe allergic reactions, seek immediate medical attention.
-          For persistent symptoms that don't improve, schedule a visit with a
-          healthcare provider.
-        </p>
-      </Card>
+      <div className="max-w-4xl">
+        <Card className="mb-10 border-l-4 border-red-500">
+          <h3 className="font-semibold text-[#0F4C3A] mb-2">
+            When to seek urgent care
+          </h3>
+          <p className="text-gray-700 text-sm">
+            If you experience severe symptoms like difficulty breathing, chest
+            pain, or severe allergic reactions, seek immediate medical attention.
+            For persistent symptoms that don't improve, schedule a visit with a
+            healthcare provider.
+          </p>
+        </Card>
+      </div>
 
       {/* Next Steps */}
-      <Section title="Next steps">
+      <div className="max-w-4xl">
+        <Section title="Next steps">
         <div className="grid md:grid-cols-3 gap-6">
           <Card title={`${condition.name} overview`}>
             <p className="text-gray-700 mb-4 leading-relaxed">
@@ -187,45 +223,43 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </Card>
         </div>
       </Section>
+      </div>
 
       {/* E-E-A-T: Why Trust Parsley */}
-      <WhyTrustParsley />
+      <div className="max-w-4xl">
+        <WhyTrustParsley />
+      </div>
 
-      {/* Sources */}
-      <Section title="Sources">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <ul className="space-y-2 text-sm text-gray-700">
-            <li>
-              • Shoemaker, R. C., & House, D. E. (2006). Sick building syndrome
-              in water-damaged buildings: Generalizability of the biotoxin
-              pathway.{" "}
-              <span className="italic">
-                Journal of Environmental Health
-              </span>
-              .
-            </li>
-            <li>
-              • Brewer, J. H., et al. (2013). Detection of mycotoxins in
-              patients with chronic fatigue syndrome.{" "}
-              <span className="italic">Toxins</span>.
-            </li>
-            <li>
-              • Rea, W. J., et al. (2003). Effects of toxic exposure to molds
-              and mycotoxins in building-related illnesses.{" "}
-              <span className="italic">Archives of Environmental Health</span>.
-            </li>
-            <li>
-              • Hope, J. (2013). A review of the mechanism of injury and
-              treatment approaches for illness resulting from exposure to
-              water-damaged buildings, mold, and mycotoxins.{" "}
-              <span className="italic">Scientific World Journal</span>.
-            </li>
-          </ul>
-        </div>
-      </Section>
+      {/* Sources & Citations Toggle */}
+      <div className="max-w-4xl">
+        <SourcesToggle
+          sources={[
+            {
+              id: 1,
+              citation:
+                'Shoemaker, R. C., & House, D. E. (2006). Sick building syndrome in water-damaged buildings: Generalizability of the biotoxin pathway. <span class="italic">Journal of Environmental Health</span>.',
+            },
+            {
+              id: 2,
+              citation:
+                'Brewer, J. H., et al. (2013). Detection of mycotoxins in patients with chronic fatigue syndrome. <span class="italic">Toxins</span>.',
+            },
+            {
+              id: 3,
+              citation:
+                'Rea, W. J., et al. (2003). Effects of toxic exposure to molds and mycotoxins in building-related illnesses. <span class="italic">Archives of Environmental Health</span>.',
+            },
+            {
+              id: 4,
+              citation:
+                'Hope, J. (2013). A review of the mechanism of injury and treatment approaches for illness resulting from exposure to water-damaged buildings, mold, and mycotoxins. <span class="italic">Scientific World Journal</span>.',
+            },
+          ]}
+        />
+      </div>
 
       {/* Footer Disclaimer */}
-      <div className="mt-12 pt-8 border-t border-gray-200">
+      <div className="max-w-4xl mt-12 pt-8 border-t border-gray-200">
         <p className="text-sm text-gray-600 leading-relaxed">
           <strong>Medical disclaimer:</strong> Information on this page is for
           educational purposes only and does not replace medical advice. If you
